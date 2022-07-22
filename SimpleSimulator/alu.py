@@ -1,6 +1,3 @@
-from SimpleSimulator.SimpleSimulator import read_register, write_register
-
-
 def decimalToBinary(number):
     binary = ""
     while (number):
@@ -27,11 +24,16 @@ def add(ra, rb, rc):
     rb = binaryToDecimal(rb)
 
     if (ra + rb >= pow(2, 16)):
-        pass
+        flags = read_register("FLAGS")
+        flags = flags.split()
+        flags[12] = "1"
+        flags = "".join(flags)
+        write_register("FLAGS", flags)
     else:
         s = ra + rb
         binary_sum = decimalToBinary(s)
         write_register(rc, binary_sum)
+        reset_flags()
 
 def subtract(ra, rb, rc):
     ra = read_register(ra)
@@ -41,11 +43,18 @@ def subtract(ra, rb, rc):
     rb = binaryToDecimal(rb)
 
     if (ra - rb < 0):
-        pass
+        flags = read_register("FLAGS")
+        flags = flags.split()
+        flags[12] = "1"
+        flags = "".join(flags)
+        write_register(rc, 16 * "0")
+        write_register("FLAGS", flags)
     else:
         d = ra - rb
         binary_diff = decimalToBinary(d)
         write_register(rc, binary_diff)
+        reset_flags()
+
 
 def multiply(ra, rb, rc):
     ra = read_register(ra)
@@ -55,11 +64,17 @@ def multiply(ra, rb, rc):
     rb = binaryToDecimal(rb)
 
     if (ra * rb >= pow(2, 16)):
-        pass
+        flags = read_register("FLAGS")
+        flags = flags.split()
+        flags[12] = "1"
+        flags = "".join(flags)
+        write_register("FLAGS", flags)
     else:
         m = ra * rb
         binary_mul = decimalToBinary(m)
         write_register(rc, binary_mul)
+        reset_flags()
+
 
 def divide(ra, rb):
     ra = read_register(ra)
@@ -144,8 +159,20 @@ def compare(ra, rb):
     rb = binaryToDecimal(rb)
 
     if (ra < rb):
-        pass
+        flags = read_register("FLAGS")
+        flags = flags.split()
+        flags[13] = "1"
+        flags = "".join(flags)
+        write_register("FLAGS", flags)
     elif (ra == rb):
-        pass
+        flags = read_register("FLAGS")
+        flags = flags.split()
+        flags[15] = "1"
+        flags = "".join(flags)
+        write_register("FLAGS", flags)
     else:
-        pass
+        flags = read_register("FLAGS")
+        flags = flags.split()
+        flags[14] = "1"
+        flags = "".join(flags)
+        write_register("FLAGS", flags)

@@ -47,29 +47,6 @@ def decoder(instruction):
         "10011": ["movr", "C"],
     }
     
-    opcodes = {
-        '00000':["add","A"],
-        '00001':["sub","A"],
-        '00010':["movi","B"],
-        '00011':["movr","C"],
-        '00100':["ld","D"],
-        '00101':["st","D"],
-        '00110':["mul","A"],
-        '00111':["div","C"],
-        '01000':["rs","B"],
-        '01001':["ls","B"],
-        '01010':["xor","A"],
-        '01011':["or","A"],
-        '01100':["and","A"],
-        '01101':["not","C"],
-        '01110':["cmp","C"],
-        '01111':["jmp","E"],
-        '10000':["jlt","E"],
-        '10001':["jgt","E"],
-        '10010':["je","E"],
-        '10011':["hlt","F"],
-    }
-
     opcode = instruction[0:5]
     op_type = opcodes[opcode][1]
     ins = opcodes[opcode][0]
@@ -79,8 +56,7 @@ def decoder(instruction):
         reg1 = instruction[7:10]
         reg2 = instruction[10:13]
         reg3 = instruction[13:]
-        # l = [op_type, ins, registers[reg1], registers[reg2], registers[reg3]]
-        l = [op_type, ins, registers[reg2], registers[reg3], registers[reg1]]
+        l = [op_type, ins, registers[reg1], registers[reg2], registers[reg3]]
 
     elif op_type == "B":
         reg1 = instruction[5:8]
@@ -262,17 +238,15 @@ def bitwise_and(ra, rb, rc):
     write_register(rc, result)
 
 def bitwise_not(ra, rb):
-    # ra = read_register(ra)
-    rb = read_register(rb)
-    # ra = binaryToDecimal(ra)
+    ra = read_register(ra)
 
     result = ""
-    for i in rb:
+    for i in ra:
         if (i == "1"):
             result += "0"
         else:
             result += "1"
-    write_register(ra, result)
+    write_register(rb, result)
 
 def compare(ra, rb):
     ra = read_register(ra)
@@ -396,8 +370,8 @@ def executioner(instruction, instruction_type, arguments, program_counter):
         elif (instruction == "cmp"):
             compare(arguments[0], arguments[1])
         elif (instruction == "movr"):
-            r2 = read_register(arguments[1])
-            write_register(arguments[0], r2)
+            r1 = read_register(arguments[0])
+            write_register(arguments[1], r1)
     elif (instruction_type == "D"):
         if (instruction == "ld"):
             ld(arguments[0], arguments[1])
@@ -423,12 +397,10 @@ def memory_dump():
 
 def data_dump(program_counter):
     program_counter = decimalToBinary(program_counter)[8:]
-    print(program_counter, end=" ")
-
+    line = program_counter + " "
     for reg in ["R0", "R1", "R2", "R3", "R4", "R5", "R6", "FLAGS"]:
-        print(registers[reg], end=" ")
-
-    print()
+        line += registers[reg] + " "
+    print(line[:-1])
 
 def loop():
     program_counter = 0

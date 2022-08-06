@@ -1,4 +1,7 @@
 import sys
+import matplotlib.pyplot as plt 
+import numpy as np
+import datetime
 # weewooweewoo
 
 # Memory (global list): 256 lines long list
@@ -13,86 +16,6 @@ import sys
 memory = []
 registers = {}
 
-def FloatingPoint_to_Decimal(val):
-    exp = val[0:3]
-    mantisa = val[3:]
-    number = "1" + mantisa
-    exponent = toDecimal(2, str(exp))
-    if (exponent < 0):
-        number = "0." + (abs(exponent) - 1)*"0" + number
-    elif (exponent > 0):
-        number = number[:(abs(exponent) + 1)] + "." + number[(abs(exponent) + 1):]
-    else:
-        number = number[0] + "." + number[1:]
-    number = toDecimal(2, number)
-    number = str(number)
-    return number
-
-def Decimal_to_FloatingPoint(number):
-    bin_num = str(decimalTo(2, number))
-    bin_num = bin_num.split(".")
-    exp = 0
-    exp = len(bin_num[0][1:])
-    bin_num[0] = bin_num[0][0] + "." + bin_num[0][1:]
-    bin_num = "".join(bin_num)
-    mantisa = bin_num[2:7]
-    if len(mantisa)<5:
-        mantisa += "0"*(5-len(mantisa))
-    exp = decimalTo(2, str(exp))
-    if len(exp)<3:
-        exp = "0"*(3-len(exp)) + exp
-    IEEE_rep = exp + mantisa
-    IEEE_rep = 8*"0" + IEEE_rep
-    return IEEE_rep
-
-def decimalTo(base, n):
-    n = str(n).split(".")
-    integerPart = int(n[0])
-    result = ""
-    while (integerPart):
-        rem = integerPart % base
-        if (rem > 9):
-            rem = chr(rem + 55)
-        result = str(rem) + result
-        integerPart //= base
-    if (len(n) > 1):
-        result += "."
-        if (int(n[0]) == 0):
-            result = "0."
-        fracPart = "0." + n[1]
-        steps = 0
-        while (float(fracPart) > 0):
-            if (steps > 10):
-                break
-            rem = float(fracPart) * base
-            lst = str(rem).split(".")
-            d = lst[0]
-            if (int(d) > 9):
-                d = chr(int(d) + 55)
-            fracPart = "0." + lst[1]
-            result += d
-            steps += 1
-    return result 
-# end decimalTo
-
-def toDecimal(base, n):
-    code = {"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "A": "10", "B": "11", "C": "12", "D": "13", "E": "14", "F": "15", "G": "16", "H": "17", "I": "18", "J": "19", "K": "20", "L": "21", "M": "22", "N": "23", "O": "24", "P": "25", "Q": "26", "R": "27", "S": "28", "T": "29", "U": "30", "V": "31", "W": "32", "X": "33", "Y": "34", "Z": "35"}
-    n = n.split(".")
-    power = 0
-    result = 0
-    for x in n[0][::-1]:
-        x = code[x]
-        result += int(x)*(base**power)
-        power += 1
-
-    if (len(n) > 1):
-        power = -1
-        for x in n[1]:
-            x = code[x]
-            result += int(x)*(base**power)
-            power -= 1
-    return result
-# end toDecimal
 def decoder(instruction):
     registers = {
         "000": "R0",
@@ -125,11 +48,8 @@ def decoder(instruction):
         "01010": ["hlt", "F"],
         "10010": ["movi", "B"],
         "10011": ["movr", "C"],
-        "00000": ["addf", "A"],
-        "00001": ["subf", "A"],
-        "00010": ["movf", "B"],
     }
-
+    
     opcode = instruction[0:5]
     op_type = opcodes[opcode][1]
     ins = opcodes[opcode][0]
@@ -144,10 +64,7 @@ def decoder(instruction):
     elif op_type == "B":
         reg1 = instruction[5:8]
         imm = instruction[8:]
-        if (ins == "movf"):
-            imm = FloatingPoint_to_Decimal(imm)
-        else:
-            imm = binaryToDecimal(imm)
+        imm = binaryToDecimal(imm)
         l = [op_type, ins, registers[reg1], imm]
     
     elif op_type == "C":
@@ -175,7 +92,6 @@ def decoder(instruction):
 
 def decimalToBinary(number):
     binary = ""
-    number = int(number)
     while (number):
         binary = str(number % 2) + binary
         number //= 2
@@ -212,27 +128,6 @@ def add(ra, rb, rc):
         write_register(rc, binary_sum)
         reset_flags()
 
-def addf(ra, rb, rc):
-    ra = read_register(ra)
-    rb = read_register(rb)
-
-    ra = float(FloatingPoint_to_Decimal(ra[8:]))
-    rb = float(FloatingPoint_to_Decimal(rb[8:]))
-
-    reset_flags()
-    if (ra + rb >= pow(2, 16)):
-        write_register(rc, decimalToBinary((ra + rb) % pow(2, 16)))
-        flags = read_register("FLAGS")
-        flags = list(flags)
-        flags[12] = "1"
-        flags = "".join(flags)
-        write_register("FLAGS", flags)
-    else:
-        s = ra + rb
-        binary_sum = Decimal_to_FloatingPoint(s)
-        write_register(rc, binary_sum)
-        reset_flags()
- 
 def subtract(ra, rb, rc):
     ra = read_register(ra)
     rb = read_register(rb)
@@ -253,28 +148,6 @@ def subtract(ra, rb, rc):
         binary_diff = decimalToBinary(d)
         write_register(rc, binary_diff)
         reset_flags()
-
-def subtractf(ra, rb, rc):
-    ra = read_register(ra)
-    rb = read_register(rb)
-
-    ra = float(FloatingPoint_to_Decimal(ra[8:]))
-    rb = float(FloatingPoint_to_Decimal(rb[8:]))
-
-    reset_flags()
-    if (ra - rb < 0):
-        write_register(rc, decimalToBinary(0))
-        flags = read_register("FLAGS")
-        flags = list(flags) 
-        flags[12] = "1"
-        flags = "".join(flags)
-        write_register("FLAGS", flags)
-    else:
-        d = ra - rb
-        binary_diff = Decimal_to_FloatingPoint(d)
-        write_register(rc, binary_diff)
-        reset_flags()
-
 
 def multiply(ra, rb, rc):
     ra = read_register(ra)
@@ -368,17 +241,15 @@ def bitwise_and(ra, rb, rc):
     write_register(rc, result)
 
 def bitwise_not(ra, rb):
-    # ra = read_register(ra)
-    rb = read_register(rb)
-    # ra = binaryToDecimal(ra)
+    ra = read_register(ra)
 
     result = ""
-    for i in rb:
+    for i in ra:
         if (i == "1"):
             result += "0"
         else:
             result += "1"
-    write_register(ra, result)
+    write_register(rb, result)
 
 def compare(ra, rb):
     ra = read_register(ra)
@@ -406,6 +277,11 @@ def compare(ra, rb):
         flags[14] = "1"
         flags = "".join(flags)
         write_register("FLAGS", flags)
+
+cycle_counter = 0
+
+p_counter_location = []
+c_counter_values = []
 
 def init_memory():
     # take input from stdin
@@ -473,6 +349,7 @@ def je(mem_addr, program_counter):
     return 1 + program_counter
 
 def executioner(instruction, instruction_type, arguments, program_counter):
+    global cycle_counter
     if (instruction_type == "A"):
         if (instruction == "add"):
             add(arguments[0], arguments[1], arguments[2])
@@ -486,10 +363,6 @@ def executioner(instruction, instruction_type, arguments, program_counter):
             bitwise_or(arguments[0], arguments[1], arguments[2])
         elif (instruction == "and"):
             bitwise_and(arguments[0], arguments[1], arguments[2])
-        elif (instruction == "addf"):
-            addf(arguments[0], arguments[1], arguments[2])
-        elif (instruction == "subf"):
-            subtractf(arguments[0], arguments[1], arguments[2])
     elif (instruction_type == "B"):
         if (instruction == "rs"):
             right_shift(arguments[0], arguments[1])
@@ -497,9 +370,6 @@ def executioner(instruction, instruction_type, arguments, program_counter):
             left_shift(arguments[0], arguments[1])
         elif (instruction == "movi"):
             imm = decimalToBinary(arguments[1])
-            write_register(arguments[0], imm)
-        elif (instruction == "movf"):
-            imm = Decimal_to_FloatingPoint(arguments[1])
             write_register(arguments[0], imm)
     elif (instruction_type == "C"):
         if (instruction == "div"):
@@ -509,8 +379,8 @@ def executioner(instruction, instruction_type, arguments, program_counter):
         elif (instruction == "cmp"):
             compare(arguments[0], arguments[1])
         elif (instruction == "movr"):
-            r2 = read_register(arguments[1])
-            write_register(arguments[0], r2)
+            r1 = read_register(arguments[0])
+            write_register(arguments[1], r1)
     elif (instruction_type == "D"):
         if (instruction == "ld"):
             ld(arguments[0], arguments[1])
@@ -518,16 +388,22 @@ def executioner(instruction, instruction_type, arguments, program_counter):
             st(arguments[0], arguments[1])
     elif (instruction_type == "E"):
         if (instruction == "jmp"):
+            cycle_counter += 1
             return arguments[0]
         elif (instruction == "jlt"):
+            cycle_counter += 1
             return jlt(arguments[0], program_counter)
         elif (instruction == "jgt"):
+            cycle_counter += 1
             return jgt(arguments[0], program_counter)
         elif (instruction == "je"):
+            cycle_counter += 1
             return je(arguments[0], program_counter)
     elif (instruction_type == "F"):
+        cycle_counter += 1
         return -1
 
+    cycle_counter += 1
     return program_counter + 1
 
 def memory_dump():
@@ -546,6 +422,9 @@ def loop():
     init_memory()
     init_registers()
     while True:
+        c_counter_values.append(cycle_counter)
+        p_counter_location.append(program_counter)
+
         instruction = fetch_instruction(program_counter)
         decoded_ins = decoder(instruction)
         new_program_counter = executioner(decoded_ins[1], decoded_ins[0], decoded_ins[2:], program_counter)
@@ -561,4 +440,16 @@ def loop():
 
 loop()
 
+current_time = datetime.datetime.now()
+name = str(current_time)
 
+x_axis = c_counter_values
+y_axis = p_counter_location
+colors = np.array([0, 10, 20, 30, 40, 45, 50, 55, 60, 70, 80, 90, 100])
+plt.title("Memory Address v/s Cycle Number")
+plt.xlabel("Cycle Number")
+plt.ylabel("Memory Address")
+
+plt.scatter(x_axis, y_axis)
+
+plt.savefig("./images/" + name + ".png")

@@ -221,7 +221,7 @@ def addf(ra, rb, rc):
 
     reset_flags()
     if (ra + rb >= pow(2, 16)):
-        write_register(rc, decimalToBinary((ra + rb) % pow(2, 16)))
+        write_register(rc, 8*"0" + 8*"1")
         flags = read_register("FLAGS")
         flags = list(flags)
         flags[12] = "1"

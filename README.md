@@ -1,7 +1,7 @@
 # CO Group Project
 
 ## Running manual test cases
-For testing the assembler, change to the 'Simple-Assembler' directory. 
+For testing the assembler, change to the 'Simple-Assembler' directory. <br>
 Then give the `run` file executable privileges by running:
 ```
 $chmod +x run
